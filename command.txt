@@ -1,0 +1,156 @@
+
+
+1)Data-picker
+создрать в бд data(id,data)
+в консоли
+composer require —prefer-dist yiisoft/yii2-jui
+
+создать во view\site файл:data_test
+<?php
+
+use yii\helpers\Html;
+use yii\jui\DatePicker;
+use yii\widgets\ActiveForm;
+
+
+?>
+
+
+<?php
+$form = ActiveForm::begin(['id' => 'form-signup']); ?>
+<?=$form->field($model, 'data')->widget(DatePicker::className(), ['clientOptions' => ['defaultDate' => '2014-01-01']]) ?>
+<?= Html::submitButton("Сохранить"); ?>
+
+<?php ActiveForm::end(); ?>
+
+сделать через gii data
+В sitecontroller
+use app\models\Data; 
+public function actionDataTest()
+{
+$model = new Data();
+if ($model->load(Yii::$app->request->post())){
+$data_from = strtotime($model->data);
+$model->data = $data_from;
+
+$model->save();
+}
+return $this->render('data_test', [
+'model' => $model,
+]);
+
+}
+
+2)Меню
+В Main
+<div class="topbar">
+<div class="container">
+
+
+<?= yii\widgets\Menu::widget([
+'items' => Menu::getMenu(),
+'options'=>[
+'class' => 'right-topbar'
+],
+]);
+?>
+</div>
+</div> 
+Модель Menu
+<?php
+namespace app\models;
+
+use Yii;
+use yii\base\Model;
+use yii\helpers\Html;
+use yii\helpers\ArrayHelper;
+use yii\helper\Url;
+use yii\controller\SiteConstroller;
+
+
+class Menu extends Model{
+public static function getMenu()
+{
+
+//$roles = Yii::$app->user->identity->userroles;
+
+if(Yii::$app->user->isGuest)
+{
+$menu = [
+['label' => 'Войти', 'url' => ['/site/login']],
+['label' => 'Регистрация', 'url' => ['/site/signup']],
+];
+return $menu;
+}
+
+if(!Yii::$app->user->identity->userroles){
+$menu = [
+['label' => Yii::$app->user->identity->username, 'url' => ['site/logout'], ['data-method' => 'POST' ]],
+['label' => 'профиль', 'url' => ['/profile/view' , 'id' => Yii::$app->user->identity->id]],
+];
+}
+
+if(in_array(User::ROLE_ADMIN,Yii::$app->user->identity->userroles)){
+$menu = [
+//['label' => 'фото', 'url' => ['/site']],
+['label' => 'товары', 'url' => ['/site']],
+['label' => 'users', 'url' => ['/user']],
+['label' => 'role', 'url' => ['admin/auth']],
+['label' => Yii::$app->user->identity->username, 'url' => ['site/logout'], ['data-method' => 'POST' ]],
+];
+}
+
+if(in_array(User::ROLE_EDITOR,Yii::$app->user->identity->userroles)){
+$menu = [
+['label' => 'заказы', 'url' => ['/site']],
+['label' => 'товары', 'url' => ['/site']],
+['label' => Yii::$app->user->identity->username, 'url' => ['site/logout'], ['data-method' => 'POST' ]],
+];
+}
+
+
+$default = [
+// ['label' => 'Корзина', 'url' => ['#']],
+];
+return ArrayHelper::merge($menu, $default);
+}
+}	
+
+Модель User
+public function getUserRoles($id=null) {
+if (!$id){
+$id = $this->getId();
+}
+
+$getroles = (Yii::$app->authManager->getRolesByUser($id));
+$getallroles=[];
+foreach ($getroles as $getrole) {
+$getallroles[] = $getrole->name;
+}
+return $getallroles;
+}
+public static function getMenu()
+{
+
+$roles = Yii::$app->user->identity->userroles;
+
+if(Yii::$app->user->isGuest)
+{
+$menu = [
+['label' => 'Войти', 'url' => ['/site/login']],
+['label' => 'Регестрация', 'url' => ['#']],
+];
+return $menu;
+}
+}
+const ROLE_ADMIN = 'admin';
+const ROLE_MANAGER = 'manager';
+Комментируем строчки в sitecontroller
+'verbs' => [
+// 'class' => VerbFilter::className(),
+// 'actions' => [
+// 'logout' => ['post'],
+// ],
+// ],
+
+Консоль php yii rbac/init .
